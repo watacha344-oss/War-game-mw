@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>師団規模ウォーゲーム</title>
+  <meta name="theme-color" content="#1a1d20">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="師団ウォーゲーム">
+  <!-- すべて相対パス：GitHub Pages の https://<user>.github.io/<repo>/ 配下でも動く -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.svg">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- 上部バー：常に見える最小限の操作 -->
+  <header id="topbar">
+    <button id="btnUnits" class="tb">☰ UNITS</button>
+    <button id="btnPause" class="tb">▶</button>
+    <button id="btnSpeed" class="tb">×1</button>
+    <span id="turnClock">TURN 1 · 0600 HRS</span>
+    <span id="objStatus"></span>
+    <span class="title">OPERATIONAL COMMAND: DIVISION LEVEL</span>
+    <button id="btnLog" class="tb">LOG</button>
+    <button id="btnMenu" class="tb">MENU</button>
+    <button id="btnSitrep" class="tb">SITREP ▤</button>
+  </header>
+  <div id="rotate">端末を横向きにすると遊びやすくなります</div>
+
+  <!-- ② 左パネル：部隊ツリー（Units & Order of Battle） -->
+  <aside id="unitsPanel" class="side left">
+    <div class="ph"><span>UNITS <em id="unitsCount">0</em></span><button id="btnUnitsClose" class="x">×</button></div>
+    <div id="tree"></div>
+  </aside>
+
+  <!-- ③ 右パネル：作戦状況・ターン情報（Situation & Logistics） -->
+  <aside id="sitPanel" class="side right">
+    <div class="ph"><span>SITUATION</span><button id="btnSitClose" class="x">×</button></div>
+    <div class="scroll">
+      <div id="sTurn" class="big">TURN 1 — 0600 HRS</div>
+      <div id="sElapsed" class="dim"></div>
+      <div class="ctl">
+        <button id="pPlay">▶ PLAY</button>
+        <button id="pPause">⏸ PAUSE</button>
+        <button id="pFast">⏩ ×1</button>
+      </div>
+      <div class="sec">AIR SUPERIORITY</div>
+      <div class="gauge"><i id="gBlue"></i><i id="gRed"></i></div>
+      <div id="gTxt" class="dim"></div>
+      <div class="sec">CASUALTIES</div>
+      <canvas id="gCas" class="chart" width="440" height="100"></canvas>
+      <div id="cCasTxt" class="dim"></div>
+      <div class="sec">LOGISTICS</div>
+      <canvas id="gLog" class="chart" width="440" height="100"></canvas>
+      <div id="cLogTxt" class="dim"></div>
+      <div class="sec">OBJECTIVE</div>
+      <div id="oName" class="dim"></div>
+      <div class="pbar"><i id="oBar"></i></div>
+      <div class="sec">LINES &amp; SUPPORT</div>
+      <div id="sMsr">MSR</div>
+      <div id="sAir" class="dim"></div>
+      <div id="sPara" class="dim"></div>
+    </div>
+  </aside>
+
+  <!-- 命令の選択（Issue Orders を押すと出る） -->
+  <div id="orderPop" hidden>
+    <div class="oh"><span>ORDER: <b id="orderWho"></b></span><button id="btnOrderClose" class="x">×</button></div>
+    <div class="ob">
+      <button data-mode="advance">進軍</button>
+      <button data-mode="attack">攻撃</button>
+      <button data-mode="defend">防御</button>
+      <button data-mode="hold">待機</button>
+      <button id="btnDone">完了</button>
+    </div>
+  </div>
+
+  <!-- ④ 下部パネル：ミニマップ・ログ・指揮ボタン -->
+  <footer id="bottomBar">
+    <div id="miniWrap"><canvas id="mini"></canvas></div>
+    <div id="radioWrap">
+      <div class="ph"><span>RADIO / OPS LOG</span><button id="btnLogAll" class="x">ALL</button></div>
+      <div id="radio"></div>
+    </div>
+    <div id="cmdGrid">
+      <button id="cIssue"><b>Issue Orders</b></button>
+      <button id="cFire" class="wip"><b>Request Fire Mission</b><em>準備中</em></button>
+      <button id="cAir"><b>Allocate Air Support</b><em id="cAirSub"></em></button>
+      <button id="cPara"><b>Airborne Drop</b><em id="cParaSub"></em></button>
+      <button id="cSupply" class="wip"><b>Allocate Supply</b><em>準備中</em></button>
+      <button id="cIntel"><b>View Intelligence Reports</b></button>
+      <button id="cROE" class="wip"><b>Adjust Rules of Engagement</b><em>準備中</em></button>
+      <button id="cPlan" class="wip"><b>Command Team Plan</b><em>準備中</em></button>
+    </div>
+  </footer>
+
+  <!-- 戦闘ログ（全文） -->
+  <aside id="logPanel" hidden>
+    <div class="ph"><span>戦闘ログ</span><button id="btnLogClose" class="x">×</button></div>
+    <div id="logList"></div>
+  </aside>
+
+  <!-- 情報報告 -->
+  <aside id="intelPanel" hidden>
+    <div class="ph"><span>INTELLIGENCE REPORT</span><button id="btnIntelClose" class="x">×</button></div>
+    <div id="intelSum" class="dim"></div>
+    <div id="intelList"></div>
+  </aside>
+
+  <!-- 地図タップで出るツールチップ -->
+  <div id="tip" hidden>
+    <div id="tipTitle"></div>
+    <div id="tipBody"></div>
+  </div>
+
+  <div id="toast" hidden></div>
+
+  <div id="overlay">
+    <div class="card">
+      <h1 id="ovTitle"></h1>
+      <p id="ovBody"></p>
+      <div id="ovBtns"></div>
+    </div>
+  </div>
+
+  <script>
+    // Service Worker の登録（オフライン動作用）
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (e) { console.error('SW登録失敗', e); });
+      });
+    }
+  </script>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>

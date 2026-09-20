@@ -1,0 +1,17 @@
+{
+  "name": "師団規模ウォーゲーム",
+  "short_name": "師団ウォーゲーム",
+  "description": "第二次世界大戦の欧州を舞台にした、補給と機動で戦う個人用ウォーゲーム",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#1a1d20",
+  "theme_color": "#1a1d20",
+  "icons": [
+    { "src": "icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
